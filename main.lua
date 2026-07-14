@@ -1,62 +1,21 @@
-local states = {}
-local activeState = "Start"
-local lastState = "Start"
-
--- Gamepad single key press mapping
-local button_press = {
-	back = function()
-		love.event.quit()
-	end,
-	start = function()
-		if activeState ~= "Paused" then
-			lastState = activeState
-			activeState = "Paused"
-		else
-			activeState = lastState
-		end
-	end, 
-	a = function()
-		if activeState ~= "Level"  and activeState ~= "Paused" then
-			activeState = "Level"
-		end
-	end,
-	b = function()
-		states.Level:reset()
-		activeState = "Start"
-	end
-}
-
--- Keyboard single key press mapping
-local key_press = {
-	escape = function()
-		love.event.quit()
-	end,
-	space = function()
-		if activeState ~= "Paused" then
-			lastState = activeState
-			activeState = "Paused"
-		else
-			activeState = lastState
-		end
-	end,
-	a = function()
-		if activeState ~= "Level" and activeState ~= "Paused" then
-			activeState = "Level"
-		end
-	end,
-	b = function()
-		states.Level:reset()
-		activeState = "Start"
-	end
-}
+-- R. Bassett Jr. 
+-- 2026.07.08
+-- Starting point for a game that uses game states
+-- GNU General Public License (GPLv3) - https://www.gnu.org/licenses/gpl-3.0.html
 
 love.load = function()
+	states = {}
+	activeState = "Start"
+	lastState = "Start"
 	states.Start = require("start")
 	states.Paused = require("paused")
 	states.Level = require("level")
 	activeState = "Start"
 	
+	local joysticks = love.joystick.getJoysticks()
+	joystick = joysticks[1]
 end
+
 
 love.update = function(dt)
 	states[activeState]:update(dt)
@@ -67,13 +26,13 @@ love.draw = function()
 end
 
 love.gamepadpressed = function(joystick, button)
-	if button_press[button] then
-		button_press[button]()
+	if states[activeState].button_press[button] then
+		states[activeState].button_press[button]()
 	end
 end
 
 love.keypressed = function(key)
-	if key_press[key] then
-		key_press[key]()
+	if states[activeState].key_press[key] then
+		states[activeState].key_press[key]()
 	end
 end
