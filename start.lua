@@ -13,6 +13,7 @@ start.button_press = {
 	a = function()
 		if activeState ~= "Level"  and activeState ~= "Paused" then
 			activeState = "Level"
+			states.Level:load(1)
 		end
 	end,
 }
@@ -25,6 +26,7 @@ start.key_press = {
 	a = function()
 		if activeState ~= "Level" and activeState ~= "Paused" then
 			activeState = "Level"
+			states.Level:load(1)
 		end
 	end
 }

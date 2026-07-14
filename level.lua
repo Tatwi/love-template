@@ -54,6 +54,14 @@ level.key_press = {
 	end
 }
 
+-- Called from the Start state or "main menu", where the game starts.
+function level:load(lvl)
+	
+	
+	
+	print("loading level 1 data...")
+end
+
 function level:update(dt)
 	trigger = trigger + dt
 	if math.floor(trigger) == 2 then
