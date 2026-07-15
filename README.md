@@ -7,3 +7,5 @@ I am puttering away at this, because I'd like to make an arcade style game to pl
 No "AI" or "vibe coding" here, just good o'l [RTFM](https://en.wikipedia.org/wiki/RTFM). I suppose I can't be certain how other people created the examples I reference on the Internet, but I'm not personally using any of the "AI" stuff. Manually poking characters into [Geany](https://www.geany.org/) on my laptop running [Debian](https://www.debian.org/) is still my jam.
 
 I have more fun programming as a hobby when I don't use Git like it's my damned job! I'll commit whatever, whenever, because this is my thing that I am doing for my own entertainment. I still very much dislike Microsoft and the corporate productivity tracking tool that GitHub has become, but GitHub is still free (so far!) and it's not my fault MS bought it.
+
+[![Screenshot-20260715-020059.png](https://i.postimg.cc/TwDHgYdq/Screenshot-20260715-020059.png)](https://postimg.cc/VrzRcwbd)
