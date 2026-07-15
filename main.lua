@@ -28,6 +28,7 @@ love.load = function()
 	states.Level = require("level")
 	activeState = "Start"
 	lastState = "Start"
+	currentLevel = 1
 	highestLevel = 1
 	highScore = 0
 	

@@ -10,7 +10,7 @@ start.button_press = {
 	back = function()
 		love.event.quit()
 	end,
-	a = function()
+	start = function()
 		if activeState ~= "Level"  and activeState ~= "Paused" then
 			activeState = "Level"
 			states.Level:load(1)
@@ -23,10 +23,10 @@ start.key_press = {
 	escape = function()
 		love.event.quit()
 	end,
-	a = function()
+	space = function()
 		if activeState ~= "Level" and activeState ~= "Paused" then
 			activeState = "Level"
-			states.Level:load(1)
+			states.Level:load(currentLevel)
 		end
 	end
 }
@@ -36,7 +36,7 @@ function start:update(dt)
 end
 
 function start:draw()
-	love.graphics.print("   Press A to Start\n\nESC or BACK to Quit", 450, 350)
+	love.graphics.print("Press SPACE or (Start) to Play\n\n     ESC or (Back) to Quit", 230, 200)
 end
 
 return start
