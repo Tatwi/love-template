@@ -13,7 +13,7 @@ start.button_press = {
 	start = function()
 		if activeState ~= "Level"  and activeState ~= "Paused" then
 			activeState = "Level"
-			states.Level:load(1)
+			states.Level:load(currentLevel)
 		end
 	end,
 }

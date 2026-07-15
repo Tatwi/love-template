@@ -5,7 +5,6 @@
 local mX = love.graphics.getWidth()
 local mY = love.graphics.getHeight()
 local level = {}
-local action = ""
 local player = {}
 local	speed = 200
 local enemies = {
@@ -53,6 +52,7 @@ enemyColours = {
 
 local enemyMove = 0
 local enemiesAlive = 0
+local jumpTimer = 0
 
 level.drawEnemy = {
 	function(x, y)
@@ -66,60 +66,71 @@ level.drawEnemy = {
 -- Gamepad single key press mapping
 level.button_press = {
 	back = function()
-		currentLevel = 1
-		states.Level:reset()
-		activeState = "Start"
+		level:doQuit()
 	end,
 	start = function()
-		if activeState ~= "Paused" then
-			lastState = activeState
-			activeState = "Paused"
-		else
-			activeState = lastState
-		end
+		level:doPause()
 	end, 
 	a = function()
-		action = "Jump"
+		level:doJump()
 	end,
 	b = function()
-		action = "Shoot"
-		
-		local rng = math.random(1, #enemies[currentLevel])
-		
-		if enemies[currentLevel][rng].health > 0 then
-			enemies[currentLevel][rng].health = enemies[currentLevel][rng].health - 1
-		end
+		level:doShoot()
 	end
 }
 
 -- Keyboard single key press mapping
 level.key_press = {
 	escape = function()
-		currentLevel = 1
-		states.Level:reset()
-		activeState = "Start"
+		level:doQuit()
 	end,
 	p = function()
-		if activeState ~= "Paused" then
-			lastState = activeState
-			activeState = "Paused"
-		else
-			activeState = lastState
-		end
+		level:doPause()
 	end,
 	space = function()
-		action = "Jump"
+		level:doJump()
 	end,
 	lshift = function()
-		action = "Shoot"
-		
-		local rng = math.random(1, #enemies[currentLevel])
-		
-		if enemies[currentLevel][rng].health > 0 then
-			enemies[currentLevel][rng].health = enemies[currentLevel][rng].health - 1
-		end
+		level:doShoot()
 	end
 }
+
+function level:doQuit()
+	currentLevel = 1
+	states.Level:reset()
+	activeState = "Start"
+end
+
+function level:doPause()
+	if activeState ~= "Paused" then
+		lastState = activeState
+		activeState = "Paused"
+	else
+		activeState = lastState
+	end
+end
+
+function level:doJump()
+	if player.jumping then
+		return
+	end 
+	
+	if player.jumps > 0 then
+	player.jumps = player.jumps - 1
+	player.jumping = true
+	
+	player.x = math.random(player.size, mX - player.size)
+	player.y = math.random(mY - player.size * 6, mY - player.size)
+	end
+end
+
+function level:doShoot()
+	local rng = math.random(1, #enemies[currentLevel])
+		
+	if enemies[currentLevel][rng].health > 0 then
+		enemies[currentLevel][rng].health = enemies[currentLevel][rng].health - 1
+	end
+end
 
 function level:reset()
 	for i = 1, #enemies[currentLevel], 1 do
@@ -129,8 +140,7 @@ function level:reset()
 
 	mX = love.graphics.getWidth()
 	mY = love.graphics.getHeight()
-	action = ""
-	player = {x = mX/2, y = mY-16, size = 16}
+	player = {x = mX/2, y = mY-16, size = 16, jumps = 4, jumping = false}
 	speed = 200
 	enemyMove = 0
 	enemiesAlive = 0
@@ -147,8 +157,7 @@ function level:load(lvl)
 	
 	mX = love.graphics.getWidth()
 	mY = love.graphics.getHeight()
-	action = ""
-	player = {x = mX/2, y = mY-16, size = 16}
+	player = {x = mX/2, y = mY-16, size = 16, jumps = 4, jumping = false}
 	speed = 200
 end
 
@@ -173,6 +182,16 @@ function level:update(dt)
 	end
 
 	-- Get player input
+	if player.jumping then
+		jumpTimer = jumpTimer + dt
+		if math.floor(jumpTimer) == 2 then
+			player.jumping = false
+			jumpTimer = 0
+		end
+		
+		return
+	end
+	
 	local doingKeys = false
 	
 	-- Keyboard continuous input
@@ -223,7 +242,7 @@ function level:update(dt)
 end
 
 function level:draw()
-	love.graphics.print("Last Pressed Action: ".. action, 5, 2)
+	love.graphics.print("Jumps: ".. player.jumps, 5, 2)
 	love.graphics.print("Level: ".. currentLevel, 5, 20)
 	
 	-- Draw enemies
@@ -248,10 +267,19 @@ function level:draw()
 		if rowSlot > 4 then rowSlot = 1 end
 	end
 	
-	love.graphics.setColor(1, 0.4, 0.2, 1)
-	love.graphics.circle("line", player.x, player.y, player.size)
-	love.graphics.setColor(1, 1, 1, 1)
+	-- Draw Player
+	if not player.jumping then
+		love.graphics.setColor(0.3, 0, 0.3, 1)
+		love.graphics.circle("fill", player.x, player.y, player.size)
+		love.graphics.setColor(1, 0.4, 0.2, 1)
+		love.graphics.circle("line", player.x, player.y, player.size)
+		love.graphics.rectangle("fill", player.x-5, player.y-24, 10, 40)
+		love.graphics.rectangle("fill", player.x-2, player.y-28, 4, 4)
+		love.graphics.setColor(0.5, 0, 0.5, 1)
+		love.graphics.rectangle("line", player.x-5, player.y-24, 10, 40)
+	end
 	
+	love.graphics.setColor(1, 1, 1, 1)
 	love.graphics.print("Press SHIFT or (A) to randomly hit an enemy!", 160, 260)
 end
 
