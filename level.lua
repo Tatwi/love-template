@@ -208,6 +208,12 @@ function level:reset()
 		enemies[currentLevel][i].health = enemyDefaultHealth[i]
 		enemyDefaultHealth[i] =  0
 	end
+	
+	for i = 1, #bullets, 1 do
+		bullets[i].owner = 0
+		bullets[i].x = 0
+		bullets[i].y = 0
+	end
 
 	mX = love.graphics.getWidth()
 	mY = love.graphics.getHeight()
