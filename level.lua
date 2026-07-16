@@ -2,27 +2,44 @@
 -- 2026.07.08
 -- A game level with some silly example code
 -- GNU General Public License (GPLv3) - https://www.gnu.org/licenses/gpl-3.0.html
+
+local level = {}
+
+-- Game/Window properties
 local mX = love.graphics.getWidth()
 local mY = love.graphics.getHeight()
-local level = {}
+
+--
+-- Objects and their properties
+--
+
 local player = {}
-local	speed = 200
+function level:resetPlayer()
+	player = {
+		x = mX/2, y = mY-16, size = 16, jumps = 4, speed = 200,
+		shotTimer = 0,
+		jumpTimer = 0,
+		jumping = false,
+		shooting = false
+	}
+end
+
 local enemies = {
 	require("levels/1"),
 	require("levels/2"),
 	require("levels/3")
 }
 
-local enemyDefaultHealth = {}
+local enemyDefaultHealth = {} -- Save here to reset at end of level
 
 local enemyPositions = {
 	-- row 1
 	{
-		{{100,60},{200,60},{300,60},{400,60}}, 	-- 1,2,3,4
-		{{130,60},{230,60},{330,60},{430,60}},		-- 5,6,7,8
-		{{160,60},{260,60},{360,60},{460,60}},		-- 9,10,11,12
-		{{190,60},{290,60},{390,60},{490,60}}, 	-- 13,4,15,16
-		{{220,60},{320,60},{420,60},{520,60}},		-- 17,18,19,20
+		{{100,60},{200,60},{300,60},{400,60}}, 	-- rowGroup 1
+		{{130,60},{230,60},{330,60},{430,60}},		-- rowGroup 2
+		{{160,60},{260,60},{360,60},{460,60}},		-- rowGroup 3
+		{{190,60},{290,60},{390,60},{490,60}}, 	-- rowGroup 4
+		{{220,60},{320,60},{420,60},{520,60}},		-- rowGroup 5
 	},
 	-- row 2
 	{
@@ -41,7 +58,7 @@ local enemyPositions = {
 		{{220,180},{320,180},{420,180},{520,180}},
 	},
 }
-local rowGroup = 1
+local rowGroup = 1 -- Tracks which group of rows is being displayed
 
 enemyColours = {
 	{0, 1, 0},
@@ -52,9 +69,17 @@ enemyColours = {
 
 local enemyMove = 0
 local enemyMoveDir = 1
-local enemiesAlive = 0
 local enemyShotTimer = 0
-local jumpTimer = 0
+local enemiesAlive = 0
+
+local drawEnemyShapes = {
+	function(x, y)
+		love.graphics.rectangle("fill", x-16, y-16, 32, 32) -- enemy 1
+	end,
+	function(x, y)
+		love.graphics.circle("fill", x, y, 16) -- enemy 2
+	end
+}
 
 -- 0 is dead/available, 1 is enemy 1, 2 is enemy 2, 3 is the player
 local bullets = {
@@ -72,16 +97,6 @@ local bulletSpec = {
 	{speed = 300, size = 3, wobble = -1, dir = 1, c = {0,1,0.5}}, -- enemy 1
 	{speed = 150, size = 14, wobble = -2, dir = 1, c = {0,1,1}}, -- enemy 2
 	{speed = 700, size = 2, wobble = 1, dir = -1, c = {1,0.72,0}}, -- player
-}
-
-
-level.drawEnemy = {
-	function(x, y)
-		love.graphics.rectangle("fill", x-16, y-16, 32, 32)
-	end,
-	function(x, y)
-		love.graphics.circle("fill", x, y, 16)
-	end
 }
 
 -- Gamepad single key press mapping
@@ -116,6 +131,43 @@ level.key_press = {
 	end
 }
 
+--
+-- Level Functions
+--
+
+-- Called from the Start state or "main menu", where the game starts.
+function level:load(lvl)
+	currentLevel = lvl
+	enemiesAlive = #enemies[currentLevel]
+	
+	for i = 1, #enemies[currentLevel], 1 do
+		enemyDefaultHealth[i] = enemies[currentLevel][i].health
+	end
+	
+	level.resetPlayer()
+	mX = love.graphics.getWidth()
+	mY = love.graphics.getHeight()
+end
+
+function level:reset()
+	for i = 1, #enemies[currentLevel], 1 do
+		enemies[currentLevel][i].health = enemyDefaultHealth[i]
+		enemyDefaultHealth[i] =  0
+	end
+	
+	for i = 1, #bullets, 1 do
+		bullets[i].owner = 0
+		bullets[i].x = 0
+		bullets[i].y = 0
+	end
+
+	level:resetPlayer()
+	mX = love.graphics.getWidth()
+	mY = love.graphics.getHeight()
+	enemyMove = 0
+	enemiesAlive = 0
+end
+
 function level:doQuit()
 	currentLevel = 1
 	states.Level:reset()
@@ -130,6 +182,10 @@ function level:doPause()
 		activeState = lastState
 	end
 end
+
+--
+-- Player Functions
+--
 
 function level:doJump()
 	if player.jumping then
@@ -172,7 +228,22 @@ function level:doShoot()
 	if enemies[currentLevel][rng].health > 0 then
 		enemies[currentLevel][rng].health = enemies[currentLevel][rng].health - 1
 	end
+end
+
+--
+-- Enemy Functions
+--
+
+function level:enemyGetRowSlot(e)
+	if enemies[currentLevel][e].row == 2 then
+		e = e - 4
+	elseif enemies[currentLevel][e].row == 3 then
+		e = e - 8
+	elseif enemies[currentLevel][e].row == 4 then
+		e = e - 12
+	end
 	
+	return e
 end
 
 function level:doEnemyShot()
@@ -182,16 +253,8 @@ function level:doEnemyShot()
 		return
 	end
 	
-	local rowSlot = rng
+	local rowSlot = level:enemyGetRowSlot(rng)
 	
-	if enemies[currentLevel][rng].row == 2 then
-		rowSlot = rng - 4
-	elseif enemies[currentLevel][rng].row == 3 then
-		rowSlot = rng - 8
-	elseif enemies[currentLevel][rng].row == 4 then
-		rowSlot = rng - 12
-	end
-
 	-- Find an available bullet and shoot
 	for i = 1, #bullets, 1 do
 		if bullets[i].owner == 0 then
@@ -203,50 +266,9 @@ function level:doEnemyShot()
 	end
 end
 
-function level:reset()
-	for i = 1, #enemies[currentLevel], 1 do
-		enemies[currentLevel][i].health = enemyDefaultHealth[i]
-		enemyDefaultHealth[i] =  0
-	end
-	
-	for i = 1, #bullets, 1 do
-		bullets[i].owner = 0
-		bullets[i].x = 0
-		bullets[i].y = 0
-	end
-
-	mX = love.graphics.getWidth()
-	mY = love.graphics.getHeight()
-	player = {
-		x = mX/2, y = mY-16, size = 16, jumps = 4,
-		shotTimer = 0,
-		jumping = false,
-		shootig = false
-	}
-	speed = 200
-	enemyMove = 0
-	enemiesAlive = 0
-end
-
--- Called from the Start state or "main menu", where the game starts.
-function level:load(lvl)
-	currentLevel = lvl
-	enemiesAlive = #enemies[currentLevel]
-	
-	for i = 1, #enemies[currentLevel], 1 do
-		enemyDefaultHealth[i] = enemies[currentLevel][i].health
-	end
-	
-	mX = love.graphics.getWidth()
-	mY = love.graphics.getHeight()
-	player = {
-		x = mX/2, y = mY-16, size = 16, jumps = 4,
-		shotTimer = 0,
-		jumping = false,
-		shootig = false
-	}
-	speed = 200
-end
+--
+-- Game Loop Functions:
+--
 
 function level:update(dt)
 	-- Check for win
@@ -298,10 +320,10 @@ function level:update(dt)
 	
 	-- Get player input
 	if player.jumping then
-		jumpTimer = jumpTimer + dt
-		if math.floor(jumpTimer) == 2 then
+		player.jumpTimer = player.jumpTimer + dt
+		if math.floor(player.jumpTimer) == 2 then
 			player.jumping = false
-			jumpTimer = 0
+			player.jumpTimer = 0
 		end
 		
 		return
@@ -320,18 +342,18 @@ function level:update(dt)
 	
 	-- Keyboard continuous input
 	if love.keyboard.isDown("right", "d") then
-		player.x = player.x + speed * dt
+		player.x = player.x + player.speed * dt
 		doingKeys = true
 	elseif love.keyboard.isDown("left", "a") then
-		player.x = player.x - speed * dt
+		player.x = player.x - player.speed * dt
 		doingKeys = true
 	end
 	
 	if love.keyboard.isDown("down", "s") then
-		player.y = player.y + speed * dt
+		player.y = player.y + player.speed * dt
 		doingKeys = true
 	elseif love.keyboard.isDown("up", "w") then
-		player.y = player.y - speed * dt
+		player.y = player.y - player.speed * dt
 		doingKeys = true
 	end	
 
@@ -339,15 +361,15 @@ function level:update(dt)
 	if joystick and not doingKeys then 	
 		-- Gamepad continuous input
 		if joystick:isGamepadDown("dpleft") then
-			player.x = player.x - speed * dt
+			player.x = player.x - player.speed * dt
 		elseif joystick:isGamepadDown("dpright") then
-			player.x = player.x + speed * dt
+			player.x = player.x + player.speed * dt
 		end
 
 		if joystick:isGamepadDown("dpup") then
-			player.y = player.y - speed * dt
+			player.y = player.y - player.speed * dt
 		elseif joystick:isGamepadDown("dpdown") then
-			player.y = player.y + speed * dt
+			player.y = player.y + player.speed * dt
 		end
 	end
 	
@@ -387,7 +409,7 @@ function level:draw()
 			love.graphics.setColor(enemyColours[enemies[currentLevel][i].health])
 			
 			-- enemyPositions[ROW][ROW_GROUP][ROW_SLOT][1] = x, enemyPositions[ROW_GROUP][ROW_SLOT][2] = y
-			level.drawEnemy[enemies[currentLevel][i].shape](
+			drawEnemyShapes[enemies[currentLevel][i].shape](
 				enemyPositions[enemies[currentLevel][i].row][rowGroup][rowSlot][1],
 				enemyPositions[enemies[currentLevel][i].row][rowGroup][rowSlot][2]
 			)
