@@ -8,12 +8,12 @@ local enemies = {
 	{
 		row = 1,
 		shape = 1,
-		health = 3,
+		health = 4,
 	},
 	{
 		row = 1,
 		shape = 1,
-		health = 3,
+		health = 4,
 	},
 	{
 		row = 1,
@@ -44,23 +44,23 @@ local enemies = {
 		-- Row 3
 	{
 		row = 3,
-		shape = 1,
-		health = 1,
+		shape = 2,
+		health = 2,
 	},
 	{
 		row = 3,
 		shape = 1,
-		health = 1,
+		health = 0,
 	},
 	{
 		row = 3,
 		shape = 1,
-		health = 1,
+		health = 0,
 	},
 	{
 		row = 3,
-		shape = 1,
-		health = 1,
+		shape = 2,
+		health = 2,
 	},
 }
 

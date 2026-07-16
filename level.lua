@@ -44,15 +44,36 @@ local enemyPositions = {
 local rowGroup = 1
 
 enemyColours = {
-	{r=0, g=255, b=0}, 		-- green
-	{r=0, g=0, b=255}, 		-- blue
-	{r=128, g=0, b=128},		-- purple
-	{r=225, g=0, b=0},		-- red
+	{0, 1, 0},
+	{0, 0, 1},
+	{1, 0, 1},
+	{1, 0, 0}
 }
 
 local enemyMove = 0
+local enemyMoveDir = 1
 local enemiesAlive = 0
+local enemyShotTimer = 0
 local jumpTimer = 0
+
+-- 0 is dead/available, 1 is enemy 1, 2 is enemy 2, 3 is the player
+local bullets = {
+	{owner = 0, x = 0, y = 0},
+	{owner = 0, x = 0, y = 0},
+	{owner = 0, x = 0, y = 0},
+	{owner = 0, x = 0, y = 0},
+	{owner = 0, x = 0, y = 0},
+	{owner = 0, x = 0, y = 0},
+	{owner = 0, x = 0, y = 0},
+	{owner = 0, x = 0, y = 0},
+}
+
+local bulletSpec = {
+	{speed = 300, size = 3, wobble = -1, dir = 1, c = {0,1,0.5}}, -- enemy 1
+	{speed = 150, size = 14, wobble = -2, dir = 1, c = {0,1,1}}, -- enemy 2
+	{speed = 700, size = 2, wobble = 1, dir = -1, c = {1,0.72,0}}, -- player
+}
+
 
 level.drawEnemy = {
 	function(x, y)
@@ -125,10 +146,60 @@ function level:doJump()
 end
 
 function level:doShoot()
+	if player.jumping then
+		return
+	end 
+
+	if player.shooting then
+		return
+	end 
+	
+	-- Find an available bullet and shoot
+	for i = 1, #bullets, 1 do
+		if bullets[i].owner == 0 then
+			bullets[i].owner = 3
+			bullets[i].x = player.x
+			bullets[i].y = player.y
+			player.shooting = true
+			player.shotTimer = 0
+			break
+		end	
+	end
+	
+	-- Testing
 	local rng = math.random(1, #enemies[currentLevel])
 		
 	if enemies[currentLevel][rng].health > 0 then
 		enemies[currentLevel][rng].health = enemies[currentLevel][rng].health - 1
+	end
+	
+end
+
+function level:doEnemyShot()
+	local rng = math.random(1, #enemies[currentLevel])
+		
+	if enemies[currentLevel][rng].health == 0 then
+		return
+	end
+	
+	local rowSlot = rng
+	
+	if enemies[currentLevel][rng].row == 2 then
+		rowSlot = rng - 4
+	elseif enemies[currentLevel][rng].row == 3 then
+		rowSlot = rng - 8
+	elseif enemies[currentLevel][rng].row == 4 then
+		rowSlot = rng - 12
+	end
+
+	-- Find an available bullet and shoot
+	for i = 1, #bullets, 1 do
+		if bullets[i].owner == 0 then
+			bullets[i].owner = enemies[currentLevel][rng].shape
+			bullets[i].x = enemyPositions[enemies[currentLevel][rng].row][rowGroup][rowSlot][1]
+			bullets[i].y = enemyPositions[enemies[currentLevel][rng].row][rowGroup][rowSlot][2]
+			break
+		end	
 	end
 end
 
@@ -140,7 +211,12 @@ function level:reset()
 
 	mX = love.graphics.getWidth()
 	mY = love.graphics.getHeight()
-	player = {x = mX/2, y = mY-16, size = 16, jumps = 4, jumping = false}
+	player = {
+		x = mX/2, y = mY-16, size = 16, jumps = 4,
+		shotTimer = 0,
+		jumping = false,
+		shootig = false
+	}
 	speed = 200
 	enemyMove = 0
 	enemiesAlive = 0
@@ -157,7 +233,12 @@ function level:load(lvl)
 	
 	mX = love.graphics.getWidth()
 	mY = love.graphics.getHeight()
-	player = {x = mX/2, y = mY-16, size = 16, jumps = 4, jumping = false}
+	player = {
+		x = mX/2, y = mY-16, size = 16, jumps = 4,
+		shotTimer = 0,
+		jumping = false,
+		shootig = false
+	}
 	speed = 200
 end
 
@@ -171,16 +252,44 @@ function level:update(dt)
 		states.Level:reset()
 		states.Level:load(currentLevel)
 	end
+	
+	-- Update bullets
+	local enemyX = 0
+	local rowSlot = 1
+	
+	for i = 1, #bullets, 1 do
+		if bullets[i].owner > 0 then
+			-- Update position
+			bullets[i].y = bullets[i].y + bulletSpec[bullets[i].owner].speed * bulletSpec[bullets[i].owner].dir * dt
+			
+			-- Kill if off the screen
+			if bullets[i].y > mY then
+				bullets[i].owner = 0
+			elseif bullets[i].y < 0 then
+				bullets[i].owner = 0
+			end
+			
+			-- Do collisions
+		end
+	end
 
+	-- Enemy shots
+	enemyShotTimer = enemyShotTimer + dt
+	if math.floor(enemyShotTimer) > math.random(0.5, 4) then
+		level:doEnemyShot()
+		enemyShotTimer = 0
+	end
+	
 	-- Move enemies
 	enemyMove = enemyMove + dt
 	if math.floor(enemyMove) == 1 then
-		rowGroup = rowGroup + 1
-		if rowGroup > 4 then rowGroup = 1 end
-		
+		if rowGroup == 5 then enemyMoveDir = -1 end
+		if rowGroup == 1 then enemyMoveDir = 1 end
+	
+		rowGroup = rowGroup + enemyMoveDir	
 		enemyMove = 0
 	end
-
+	
 	-- Get player input
 	if player.jumping then
 		jumpTimer = jumpTimer + dt
@@ -190,6 +299,15 @@ function level:update(dt)
 		end
 		
 		return
+	end
+	
+	if player.shooting then
+		player.shotTimer = player.shotTimer + dt
+		
+		if player.shotTimer > 0.16 then
+			player.shooting = false
+			player.shotTimer = 0
+		end
 	end
 	
 	local doingKeys = false
@@ -245,16 +363,22 @@ function level:draw()
 	love.graphics.print("Jumps: ".. player.jumps, 5, 2)
 	love.graphics.print("Level: ".. currentLevel, 5, 20)
 	
+	-- Draw bullets
+	for i = 1, #bullets, 1 do
+		if bullets[i].owner > 0 then
+			love.graphics.setColor(bulletSpec[bullets[i].owner].c)
+			love.graphics.circle("fill", bullets[i].x, bullets[i].y, bulletSpec[bullets[i].owner].size + math.random(bulletSpec[bullets[i].owner].wobble,2))
+		end
+	end
+	
 	-- Draw enemies
 	local rowSlot = 1
-	local h = 0
 	enemiesAlive = 0
 	for i = 1, #enemies[currentLevel], 1 do
-		h = enemies[currentLevel][i].health
-		if h > 0 then
+		if enemies[currentLevel][i].health > 0 then
 			enemiesAlive = enemiesAlive + 1
 			
-			love.graphics.setColor(enemyColours[h].r, enemyColours[h].g, enemyColours[h].b, 1)
+			love.graphics.setColor(enemyColours[enemies[currentLevel][i].health])
 			
 			-- enemyPositions[ROW][ROW_GROUP][ROW_SLOT][1] = x, enemyPositions[ROW_GROUP][ROW_SLOT][2] = y
 			level.drawEnemy[enemies[currentLevel][i].shape](
@@ -266,7 +390,7 @@ function level:draw()
 		rowSlot = rowSlot + 1
 		if rowSlot > 4 then rowSlot = 1 end
 	end
-	
+		
 	-- Draw Player
 	if not player.jumping then
 		love.graphics.setColor(0.3, 0, 0.3, 1)
@@ -279,8 +403,7 @@ function level:draw()
 		love.graphics.rectangle("line", player.x-5, player.y-24, 10, 40)
 	end
 	
-	love.graphics.setColor(1, 1, 1, 1)
-	love.graphics.print("Press SHIFT or (A) to randomly hit an enemy!", 160, 260)
+	love.graphics.setColor(1, 1, 1)
 end
 
 return level
