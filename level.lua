@@ -16,11 +16,17 @@ local mY = love.graphics.getHeight()
 local player = {}
 function level:resetPlayer()
 	player = {
-		x = mX/2, y = mY-16, size = 16, jumps = 4, speed = 200,
+		x = mX/2, 
+		y = mY-32, 
+		size = 16, 
+		jumps = diffData[diff].j, 
+		speed = 200, 
+		health =  diffData[diff].h,
 		shotTimer = 0,
 		jumpTimer = 0,
 		jumping = false,
-		shooting = false
+		shooting = false,
+		score = 3434 -- TESTING
 	}
 end
 
@@ -70,7 +76,7 @@ enemyColours = {
 local enemyMove = 0
 local enemyMoveDir = 1
 local enemyShotTimer = 0
-local enemiesAlive = 0
+local enemiesAlive = {}
 
 local drawEnemyShapes = {
 	function(x, y)
@@ -83,6 +89,10 @@ local drawEnemyShapes = {
 
 -- 0 is dead/available, 1 is enemy 1, 2 is enemy 2, 3 is the player
 local bullets = {
+	{owner = 0, x = 0, y = 0},
+	{owner = 0, x = 0, y = 0},
+	{owner = 0, x = 0, y = 0},
+	{owner = 0, x = 0, y = 0},
 	{owner = 0, x = 0, y = 0},
 	{owner = 0, x = 0, y = 0},
 	{owner = 0, x = 0, y = 0},
@@ -138,7 +148,7 @@ level.key_press = {
 -- Called from the Start state or "main menu", where the game starts.
 function level:load(lvl)
 	currentLevel = lvl
-	enemiesAlive = #enemies[currentLevel]
+	level:resetEnemiesAlive()
 	
 	for i = 1, #enemies[currentLevel], 1 do
 		enemyDefaultHealth[i] = enemies[currentLevel][i].health
@@ -165,7 +175,7 @@ function level:reset()
 	mX = love.graphics.getWidth()
 	mY = love.graphics.getHeight()
 	enemyMove = 0
-	enemiesAlive = 0
+	level:resetEnemiesAlive()
 end
 
 function level:doQuit()
@@ -234,6 +244,14 @@ end
 -- Enemy Functions
 --
 
+function level:resetEnemiesAlive()
+	enemiesAlive = {}
+	
+	for i = 1, #enemies[currentLevel], 1 do
+		table.insert(enemiesAlive, i)
+	end
+end
+
 function level:enemyGetRowSlot(e)
 	if enemies[currentLevel][e].row == 2 then
 		e = e - 4
@@ -247,9 +265,18 @@ function level:enemyGetRowSlot(e)
 end
 
 function level:doEnemyShot()
-	local rng = math.random(1, #enemies[currentLevel])
+	local rng = enemiesAlive[math.random(1, #enemiesAlive)]
 		
 	if enemies[currentLevel][rng].health == 0 then
+		return
+	end
+	
+	-- Some randomization
+	if enemies[currentLevel][rng].shape == 1 and math.random(1, 100) < diffData[diff].e1r then
+		return
+	end
+
+	if enemies[currentLevel][rng].shape == 2 and math.random(1, 100) < diffData[diff].e2r then
 		return
 	end
 	
@@ -271,11 +298,20 @@ end
 --
 
 function level:update(dt)
+	-- Check who is alive
+	enemiesAlive = {}
+	
+	for i = 1, #enemies[currentLevel], 1 do
+		if enemies[currentLevel][i].health > 0 then
+			table.insert(enemiesAlive, i)
+		end
+	end
+
 	-- Check for win
-	if enemiesAlive == 0 then
+	if #enemiesAlive == 0 then
 		currentLevel = currentLevel + 1
 		
-		if currentLevel > 3 then currentLevel = 1 end
+		if currentLevel > #enemies then currentLevel = 1 end
 		
 		states.Level:reset()
 		states.Level:load(currentLevel)
@@ -300,13 +336,6 @@ function level:update(dt)
 			-- Do collisions
 		end
 	end
-
-	-- Enemy shots
-	enemyShotTimer = enemyShotTimer + dt
-	if math.floor(enemyShotTimer) > math.random(0.5, 4) then
-		level:doEnemyShot()
-		enemyShotTimer = 0
-	end
 	
 	-- Move enemies
 	enemyMove = enemyMove + dt
@@ -316,6 +345,14 @@ function level:update(dt)
 	
 		rowGroup = rowGroup + enemyMoveDir	
 		enemyMove = 0
+	end
+	
+		-- Enemy shots
+	enemyShotTimer = enemyShotTimer + dt
+	
+	if enemyShotTimer > diffData[diff].fr then
+		level:doEnemyShot()
+		enemyShotTimer = 0
 	end
 	
 	-- Get player input
@@ -380,17 +417,14 @@ function level:update(dt)
 		player.x = player.size
 	end
 	
-	if player.y > mY - player.size then
-		player.y = mY - player.size
+	if player.y > mY - player.size - 18 then
+		player.y = mY - player.size - 18
 	elseif player.y < mY - player.size * 6 then
 		player.y = mY - player.size * 6 
 	end
 end
 
 function level:draw()
-	love.graphics.print("Jumps: ".. player.jumps, 5, 2)
-	love.graphics.print("Level: ".. currentLevel, 5, 20)
-	
 	-- Draw bullets
 	for i = 1, #bullets, 1 do
 		if bullets[i].owner > 0 then
@@ -401,11 +435,8 @@ function level:draw()
 	
 	-- Draw enemies
 	local rowSlot = 1
-	enemiesAlive = 0
 	for i = 1, #enemies[currentLevel], 1 do
-		if enemies[currentLevel][i].health > 0 then
-			enemiesAlive = enemiesAlive + 1
-			
+		if enemies[currentLevel][i].health > 0 then			
 			love.graphics.setColor(enemyColours[enemies[currentLevel][i].health])
 			
 			-- enemyPositions[ROW][ROW_GROUP][ROW_SLOT][1] = x, enemyPositions[ROW_GROUP][ROW_SLOT][2] = y
@@ -431,7 +462,27 @@ function level:draw()
 		love.graphics.rectangle("line", player.x-5, player.y-24, 10, 40)
 	end
 	
+	-- Bottom background
+	love.graphics.setColor(0.2, 0.2, 0.2)
+	love.graphics.rectangle("fill", 0, mY-18, mX, 18)
+	
+	-- Player Health
+	love.graphics.setColor(0, 1, 0)
+	if player.health < 30 then
+		love.graphics.setColor(1, 0, 0) -- red
+	elseif player.health < 60 then
+		love.graphics.setColor(1, 1, 0) -- yellow
+	end
+	love.graphics.rectangle("fill", 8, mY-16, player.health*2, 14)
+	
+	-- Player jumps and white reset
 	love.graphics.setColor(1, 1, 1)
+	for i = 1, player.jumps, 1 do
+		love.graphics.rectangle("fill", mX - i*20 - 4, mY-16, 14, 14)
+	end
+	
+	love.graphics.print("Level: ".. currentLevel.. "  ".. diffData[diff].n, 5, 2)
+	love.graphics.print("Score: ".. player.score, 5, 18)
 end
 
 return level

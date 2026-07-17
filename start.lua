@@ -16,6 +16,10 @@ start.button_press = {
 			states.Level:load(currentLevel)
 		end
 	end,
+	x = function()
+		diff = diff + 1
+		if diff > 4 then diff = 1 end
+	end
 }
 
 -- Keyboard single key press mapping
@@ -28,6 +32,10 @@ start.key_press = {
 			activeState = "Level"
 			states.Level:load(currentLevel)
 		end
+	end,
+	x = function()
+		diff = diff + 1
+		if diff > 4 then diff = 1 end
 	end
 }
 
@@ -36,7 +44,14 @@ function start:update(dt)
 end
 
 function start:draw()
-	love.graphics.print("Press SPACE or (Start) to Play\n\n     ESC or (Back) to Quit", 230, 200)
+	local txt = ""
+	txt = txt .. "Example Game!\n\n\n\n\n\n"
+	txt = txt .. "Difficulty: ".. diffData[diff].n .. "\n\n\n"
+	txt = txt .. "Press X or (X) to change Difficulty\n\n"
+	txt = txt .. "Press SPACE or (Start) to Play\n\n\n\n"
+	txt = txt .. "ESC or (Back) to Quit"
+	
+	love.graphics.printf(txt, 0, 20, love.graphics.getWidth()/2, "center", 0, 2, 2)
 end
 
 return start

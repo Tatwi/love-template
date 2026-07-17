@@ -31,6 +31,14 @@ love.load = function()
 	currentLevel = 1
 	highestLevel = 1
 	highScore = 0
+	diff = 1
+	diffData = {
+		-- enemy fire rate, enemy fire throttle, enemy damage, player health, player jumps, name
+		{fr = 0.33, e1r = 50, e2r = 30, e1d = 5, e2d = 15, h = 200, j = 6, n = "Normal"},
+		{fr = 1.2, e1r = 70, e2r = 50, e1d = 2, e2d = 8, h = 200, j = 10, n = "Easy"},
+		{fr = 0.28, e1r = 40, e2r = 20, e1d = 5, e2d = 20, h = 150, j = 4, n = "Hard"},
+		{fr = 0.23, e1r = 30, e2r = 15, e1d = 10, e2d = 25, h = 100, j = 2, n = "Crazy"},
+	}
 	
 	-- Manage save data, stored in CSV format
 	local saveFile = "gamesave"
