@@ -26,7 +26,10 @@ function level:resetPlayer()
 		jumpTimer = 0,
 		jumping = false,
 		shooting = false,
-		score = 3434 -- TESTING
+		score = 3434, -- TESTING
+		warpSpeed = 2, -- Really this is the radius of a circle ~(=^D)
+		warpX = 0,
+		warpY = 0
 	}
 end
 
@@ -206,8 +209,20 @@ function level:doJump()
 	player.jumps = player.jumps - 1
 	player.jumping = true
 	
-	player.x = math.random(player.size, mX - player.size)
-	player.y = math.random(mY - player.size * 6, mY - player.size)
+	player.warpX = player.x
+	player.warpY = player.y
+	
+	
+	local jumpX = 0
+	
+	if (mX/2 - player.x) < 0 then
+		jumpX = math.random(player.size, mX/4) -- Jump <--
+	else
+		jumpX = math.random(mX - player.size, mX - mX/4) -- Jump -->
+	end
+	
+	player.x = jumpX
+	player.y = math.random(mY - player.size * 6, mY - player.size - 24)
 	end
 end
 
@@ -460,13 +475,25 @@ function level:draw()
 		love.graphics.rectangle("fill", player.x-2, player.y-28, 4, 4)
 		love.graphics.setColor(0.5, 0, 0.5, 1)
 		love.graphics.rectangle("line", player.x-5, player.y-24, 10, 40)
+		player.warpSpeed = 2
+	else
+		love.graphics.setColor(0.667, 1, 0.933)
+		-- Warp entrance
+		love.graphics.circle("line", player.warpX, player.warpY, math.max(2, 20 - player.warpSpeed))
+		love.graphics.circle("line", player.warpX, player.warpY, math.max(1, 12 - player.warpSpeed))
+		
+		-- Warp exit
+		love.graphics.circle("line", player.x, player.y, math.min(player.warpSpeed, 10))
+		love.graphics.circle("line", player.x, player.y, math.min(player.warpSpeed, 20))
+		
+		player.warpSpeed = player.warpSpeed + 0.16
 	end
 	
 	-- Bottom background
 	love.graphics.setColor(0.2, 0.2, 0.2)
 	love.graphics.rectangle("fill", 0, mY-18, mX, 18)
 	
-	-- Player Health
+	-- Player Health UI
 	love.graphics.setColor(0, 1, 0)
 	if player.health < 30 then
 		love.graphics.setColor(1, 0, 0) -- red
@@ -475,12 +502,13 @@ function level:draw()
 	end
 	love.graphics.rectangle("fill", 8, mY-16, player.health*2, 14)
 	
-	-- Player jumps and white reset
-	love.graphics.setColor(1, 1, 1)
+	-- Player jumps UI
+	love.graphics.setColor(0, 0.588, 0.992)
 	for i = 1, player.jumps, 1 do
 		love.graphics.rectangle("fill", mX - i*20 - 4, mY-16, 14, 14)
 	end
 	
+	love.graphics.setColor(1, 1, 1)
 	love.graphics.print("Level: ".. currentLevel.. "  ".. diffData[diff].n, 5, 2)
 	love.graphics.print("Score: ".. player.score, 5, 18)
 end
