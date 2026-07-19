@@ -332,9 +332,15 @@ function level:update(dt)
 		states.Level:load(currentLevel)
 	end
 	
+	-- Check for loss
+	if player.health < 1 then
+		level:doQuit()
+	end
+	
 	-- Update bullets
 	local enemyX = 0
 	local rowSlot = 1
+	local a, b, c = 0
 	
 	for i = 1, #bullets, 1 do
 		if bullets[i].owner > 0 then
@@ -349,6 +355,28 @@ function level:update(dt)
 			end
 			
 			-- Do collisions
+			if bullets[i].owner > 0 then
+				
+				if  bullets[i].owner == 3 then
+					-- Player's bullet, check all living enemy positions
+				else
+					-- Enemy's bullet, check player's position
+					a = math.abs(bullets[i].x - player.x)
+					b = math.abs(bullets[i].y - player.y)
+					c = math.sqrt(a*a + b*b)
+									
+					if c < player.size + bulletSpec[bullets[i].owner].size then
+						-- HIT!
+						bullets[i].owner = 0
+						
+						if bullets[i].owner == 1 then	
+							player.health = math.max(0, player.health - diffData[diff].e1d)
+						else
+							player.health = math.max(0, player.health - diffData[diff].e2d)
+						end
+					end
+				end
+			end
 		end
 	end
 	
