@@ -69,7 +69,7 @@ local enemyPositions = {
 }
 local rowGroup = 1 -- Tracks which group of rows is being displayed
 
-enemyColours = {
+local enemyColours = {
 	{0, 1, 0},
 	{0, 0, 1},
 	{1, 0, 1},
@@ -286,12 +286,8 @@ function level:doEnemyShot()
 		return
 	end
 	
-	-- Some randomization
-	if enemies[currentLevel][rng].shape == 1 and math.random(1, 100) < diffData[diff].e1r then
-		return
-	end
-
-	if enemies[currentLevel][rng].shape == 2 and math.random(1, 100) < diffData[diff].e2r then
+	-- Limit how often each time of enemy actually fires
+	if math.random(1, 100) < diffData[diff].er[enemies[currentLevel][rng].shape] then
 		return
 	end
 	
@@ -365,15 +361,9 @@ function level:update(dt)
 					b = math.abs(bullets[i].y - player.y)
 					c = math.sqrt(a*a + b*b)
 									
-					if c < player.size + bulletSpec[bullets[i].owner].size then
-						-- HIT!
-						bullets[i].owner = 0
-						
-						if bullets[i].owner == 1 then	
-							player.health = math.max(0, player.health - diffData[diff].e1d)
-						else
-							player.health = math.max(0, player.health - diffData[diff].e2d)
-						end
+					if c < player.size + bulletSpec[bullets[i].owner].size and not player.jumping then
+						player.health = math.max(0, player.health - diffData[diff].ed[bullets[i].owner]) -- HIT!
+						bullets[i].owner = 0 -- Destroyed!
 					end
 				end
 			end
