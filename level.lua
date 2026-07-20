@@ -4,11 +4,6 @@
 -- GNU General Public License (GPLv3) - https://www.gnu.org/licenses/gpl-3.0.html
 
 local level = {}
-
--- Game/Window properties
-local mX = love.graphics.getWidth()
-local mY = love.graphics.getHeight()
-
 --
 -- Objects and their properties
 --
@@ -81,14 +76,7 @@ local enemyMoveDir = 1
 local enemyShotTimer = 0
 local enemiesAlive = {}
 
-local drawEnemyShapes = {
-	function(x, y)
-		love.graphics.rectangle("fill", x-16, y-16, 32, 32) -- enemy 1
-	end,
-	function(x, y)
-		love.graphics.circle("fill", x, y, 16) -- enemy 2
-	end
-}
+
 
 -- 0 is dead/available, 1 is enemy 1, 2 is enemy 2, 3 is the player
 local bullets = {
@@ -246,13 +234,6 @@ function level:doShoot()
 			break
 		end	
 	end
-	
-	-- Testing
-	local rng = math.random(1, #enemies[currentLevel])
-		
-	if enemies[currentLevel][rng].health > 0 then
-		enemies[currentLevel][rng].health = enemies[currentLevel][rng].health - 1
-	end
 end
 
 --
@@ -266,6 +247,17 @@ function level:resetEnemiesAlive()
 		table.insert(enemiesAlive, i)
 	end
 end
+
+-- Indexed to deal with differences between square and circles
+local drawEnemyShapes = {
+	function(x, y)
+		love.graphics.rectangle("fill", x-16, y-16, 32, 32) -- enemy 1
+	end,
+	function(x, y)
+		love.graphics.circle("fill", x, y, 16) -- enemy 2
+	end
+}
+
 
 function level:enemyGetRowSlot(e)
 	if enemies[currentLevel][e].row == 2 then
@@ -346,15 +338,32 @@ function level:update(dt)
 			-- Kill if off the screen
 			if bullets[i].y > mY then
 				bullets[i].owner = 0
-			elseif bullets[i].y < 0 then
+			end
+			
+			if bullets[i].y < 0 then
 				bullets[i].owner = 0
 			end
 			
 			-- Do collisions
 			if bullets[i].owner > 0 then
-				
 				if  bullets[i].owner == 3 then
 					-- Player's bullet, check all living enemy positions
+					-- The enemiesAlive table wasn't entirely reliable for this purpose
+					for j = 1, #enemies[currentLevel], 1 do
+						-- Lua 5.1 doesn't have a continue/next loop jump, so we need to check bullets[i].owner > 0 
+						if enemies[currentLevel][j].health > 0 and bullets[i].owner > 0 then
+							rowSlot = level:enemyGetRowSlot(j)
+
+							a = (bullets[i].x - enemyPositions[enemies[currentLevel][j].row][rowGroup][rowSlot][1])
+							b = (bullets[i].y - enemyPositions[enemies[currentLevel][j].row][rowGroup][rowSlot][2])
+							c = math.sqrt(a*a + b*b)
+							
+							if c < bulletSpec[bullets[i].owner].size + 16 then
+								enemies[currentLevel][j].health = math.max(0, enemies[currentLevel][j].health - 1) -- HIT!
+								bullets[i].owner = 0 -- Destroyed!
+							end
+						end
+					end
 				else
 					-- Enemy's bullet, check player's position
 					a = math.abs(bullets[i].x - player.x)

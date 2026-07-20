@@ -1,4 +1,6 @@
-This is my **UNFINISHED** starting point for a Love2D game that uses game states and a CSV file for saving game data. The example game is intentionally made without libraries, images, or sound - it's just made with [LÖVE](https://www.love2d.org/)!
+This is my **UNFINISHED** starting point for a Love2D game that uses game states and a CSV file for saving game data.  
+
+The fully playable example game is intentionally made without libraries, images, or sound - it's just made with [LÖVE](https://www.love2d.org/)!
 
 I am puttering away at this as the starting point for an arcade style game that I'd like to make for my [Anbernic RG 40XXV](https://retrocatalog.com/retro-handhelds/rg-40xxv) retro handheld. It should run OK, as there are some Love2D games on [PortMaster](https://portmaster.games/). Hopefully it does, because I much prefer the simplicity of programming SDL2 in Lua than in C/C++! I considered using [GB Studio](https://www.gbstudio.dev/) to make a GameBoy Color game, but I have a lot experience with Lua and I like simple workflow, so here I am.
 

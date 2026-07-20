@@ -22,15 +22,24 @@ love.csvToTable = function(str)
 end
 
 love.load = function()
+	-- Max window size
+	mX = 640
+	mY = 480
+	
+	canvas = love.graphics.newCanvas(mX, mY)
+	
 	states = {}
 	states.Start = require("start")
 	states.Paused = require("paused")
 	states.Level = require("level")
 	activeState = "Start"
 	lastState = "Start"
+	
 	currentLevel = 1
+	
 	highestLevel = 1
 	highScore = 0
+	
 	-- Difficulty
 	diff = 1
 	diffData = {
@@ -76,7 +85,15 @@ love.update = function(dt)
 end
 
 love.draw = function()
-	states[activeState]:draw()
+	love.graphics.setCanvas(canvas)
+		love.graphics.clear(0, 0, 0, 0)
+		states[activeState]:draw()
+	love.graphics.setCanvas()
+	
+	love.graphics.setBlendMode("alpha")
+	love.graphics.setColor(1, 1, 1, 1)
+	
+	love.graphics.draw(canvas, 0, 0)
 end
 
 love.gamepadpressed = function(joystick, button)
