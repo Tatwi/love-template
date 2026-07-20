@@ -11,6 +11,8 @@ win.button_press = {
 		states.Level:doQuit()
 	end,
 	a = function()
+		states.Level:reset()
+		currentLevel = currentLevel + 1
 		activeState = "Level"
 		states.Level:load(currentLevel)
 	end
