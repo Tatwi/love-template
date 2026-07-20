@@ -74,9 +74,7 @@ local enemyColours = {
 local enemyMove = 0
 local enemyMoveDir = 1
 local enemyShotTimer = 0
-local enemiesAlive = {}
-
-
+local enemiesAlive = 0
 
 -- 0 is dead/available, 1 is enemy 1, 2 is enemy 2, 3 is the player
 local bullets = {
@@ -139,10 +137,10 @@ level.key_press = {
 -- Called from the Start state or "main menu", where the game starts.
 function level:load(lvl)
 	currentLevel = lvl
-	level:resetEnemiesAlive()
 	
 	for i = 1, #enemies[currentLevel], 1 do
 		enemyDefaultHealth[i] = enemies[currentLevel][i].health
+		enemiesAlive = enemiesAlive + 1
 	end
 	
 	level.resetPlayer()
@@ -166,7 +164,6 @@ function level:reset()
 	mX = love.graphics.getWidth()
 	mY = love.graphics.getHeight()
 	enemyMove = 0
-	level:resetEnemiesAlive()
 end
 
 function level:doQuit()
@@ -240,12 +237,16 @@ end
 -- Enemy Functions
 --
 
-function level:resetEnemiesAlive()
-	enemiesAlive = {}
+function level:getEnemiesAlive()
+	local e = 0
 	
 	for i = 1, #enemies[currentLevel], 1 do
-		table.insert(enemiesAlive, i)
+		if enemies[currentLevel][i].health > 0 then
+			e = e + 1
+		end
 	end
+	
+	return e
 end
 
 -- Indexed to deal with differences between square and circles
@@ -272,7 +273,19 @@ function level:enemyGetRowSlot(e)
 end
 
 function level:doEnemyShot()
-	local rng = enemiesAlive[math.random(1, #enemiesAlive)]
+	if enemiesAlive < 1 then
+		return
+	end
+
+	local rng = 0
+	
+	while true do
+		 rng = math.random(1, #enemies[currentLevel])
+		 
+		 if enemies[currentLevel][rng].health > 0 then
+			break
+		 end
+	end
 		
 	if enemies[currentLevel][rng].health == 0 then
 		return
@@ -302,27 +315,20 @@ end
 
 function level:update(dt)
 	-- Check who is alive
-	enemiesAlive = {}
-	
-	for i = 1, #enemies[currentLevel], 1 do
-		if enemies[currentLevel][i].health > 0 then
-			table.insert(enemiesAlive, i)
-		end
-	end
+	enemiesAlive = level:getEnemiesAlive()
 
 	-- Check for win
-	if #enemiesAlive == 0 then
-		currentLevel = currentLevel + 1
-		
-		if currentLevel > #enemies then currentLevel = 1 end
-		
-		states.Level:reset()
-		states.Level:load(currentLevel)
+	if enemiesAlive < 1 then
+		if currentLevel == #enemies then
+			activeState = "EndGame" 
+		else 
+			activeState = "Win"
+		end
 	end
 	
 	-- Check for loss
 	if player.health < 1 then
-		level:doQuit()
+		activeState = "Lose"
 	end
 	
 	-- Update bullets
@@ -348,7 +354,6 @@ function level:update(dt)
 			if bullets[i].owner > 0 then
 				if  bullets[i].owner == 3 then
 					-- Player's bullet, check all living enemy positions
-					-- The enemiesAlive table wasn't entirely reliable for this purpose
 					for j = 1, #enemies[currentLevel], 1 do
 						-- Lua 5.1 doesn't have a continue/next loop jump, so we need to check bullets[i].owner > 0 
 						if enemies[currentLevel][j].health > 0 and bullets[i].owner > 0 then

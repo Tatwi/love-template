@@ -32,6 +32,9 @@ love.load = function()
 	states.Start = require("start")
 	states.Paused = require("paused")
 	states.Level = require("level")
+	states.Win = require("win")
+	states.Lose	= require("lose")
+	states.EndGame = require("endgame")
 	activeState = "Start"
 	lastState = "Start"
 	
