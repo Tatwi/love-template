@@ -12,9 +12,7 @@ win.button_press = {
 	end,
 	a = function()
 		states.Level:reset()
-		currentLevel = currentLevel + 1
-		activeState = "Level"
-		states.Level:load(currentLevel)
+		states.Level:load(currentLevel + 1)
 	end
 }
 
@@ -25,9 +23,7 @@ win.key_press = {
 	end,
 	space = function()
 		states.Level:reset()
-		currentLevel = currentLevel + 1
-		activeState = "Level"
-		states.Level:load(currentLevel)
+		states.Level:load(currentLevel + 1)
 	end
 }
 
@@ -37,11 +33,15 @@ end
 
 function win:draw()
 	local txt = ""
-	txt = txt .. "Level " .. tostring(currentLevel).. " Complete!\n\n\n\n"
+	txt = txt .. "Level " .. tostring(currentLevel) .. " Complete!\n\n"
+	txt = txt .. "Score:\n" .. states.Level:getScore() .. " / 1000\n\n\n"
+	txt = txt .. "Time:\n" .. states.Level:getTimeTakenString() .. "\n\n"
+	txt = txt .. "Accuracy:\n " .. states.Level:getAccuracy() .. "%\n\n"
+	txt = txt .. "Damage Avoidance:\n" .. states.Level:getDamageString() .. "\n\n\n"
 	txt = txt .. "Press SPACE or (A) to Continue\n\n"
 	txt = txt .. "ESC or (Back) to Quit"
 	
-	love.graphics.printf(txt, 0, 20, love.graphics.getWidth()/2, "center", 0, 2, 2)
+	love.graphics.printf(txt, 0, 20, mX, "center", 0, 1, 1)
 end
 
 return win

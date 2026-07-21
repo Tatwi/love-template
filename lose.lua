@@ -25,10 +25,12 @@ end
 
 function lose:draw()
 	local txt = ""
-	txt = txt .. "Level Failed\n\n\n\nGame Over\n\n\n\n"
+	txt = txt .. "Level Failed\n\n\nGame Over\n\n\n"
+	txt = txt .. "Score:\n" .. states.Level:getScore() .. " / 1000\n\n"
+	txt = txt .. "Accuracy:\n " .. states.Level:getAccuracy() .. "%\n\n\n\n"
 	txt = txt .. "ESC or (Back) to Quit"
 	
-	love.graphics.printf(txt, 0, 20, love.graphics.getWidth()/2, "center", 0, 2, 2)
+	love.graphics.printf(txt, 0, 20, mX, "center", 0, 1, 1)
 end
 
 return lose

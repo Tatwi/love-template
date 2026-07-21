@@ -4,6 +4,10 @@
 -- GNU General Public License (GPLv3) - https://www.gnu.org/licenses/gpl-3.0.html
 
 local level = {}
+
+local startTime = 0
+local endTime = 0
+
 --
 -- Objects and their properties
 --
@@ -21,10 +25,11 @@ function level:resetPlayer()
 		jumpTimer = 0,
 		jumping = false,
 		shooting = false,
-		score = 3434, -- TESTING
 		warpSpeed = 2, -- Really this is the radius of a circle ~(=^D)
 		warpX = 0,
-		warpY = 0
+		warpY = 0,
+		shots = 0,
+		hits = 0
 	}
 end
 
@@ -75,6 +80,8 @@ local enemyMove = 0
 local enemyMoveDir = 1
 local enemyShotTimer = 0
 local enemiesAlive = 0
+local enemyTotalHealthStart = 0
+local enemyTotalHealth = 0
 
 -- 0 is dead/available, 1 is enemy 1, 2 is enemy 2, 3 is the player
 local bullets = {
@@ -137,15 +144,23 @@ level.key_press = {
 -- Called from the Start state or "main menu", where the game starts.
 function level:load(lvl)
 	currentLevel = lvl
+	enemiesAlive = 0
 	
 	for i = 1, #enemies[currentLevel], 1 do
 		enemyDefaultHealth[i] = enemies[currentLevel][i].health
-		enemiesAlive = enemiesAlive + 1
+		enemyTotalHealth = enemyTotalHealth + enemies[currentLevel][i].health
 	end
+	
+	enemiesAlive = level:getEnemiesAlive()
+	
+	enemyTotalHealthStart = enemyTotalHealth
 	
 	level.resetPlayer()
 	mX = love.graphics.getWidth()
 	mY = love.graphics.getHeight()
+	
+	startTime = love.timer.getTime()
+	activeState = "Level"
 end
 
 function level:reset()
@@ -161,13 +176,15 @@ function level:reset()
 	end
 
 	level:resetPlayer()
-	mX = love.graphics.getWidth()
-	mY = love.graphics.getHeight()
+	startTime = 0
+	endTme = 0
 	enemyMove = 0
+	enemyTotalHealthStart = 0
+	enemyTotalHealth = 0
+	enemiesAlive = 0
 end
 
 function level:doQuit()
-	currentLevel = 1
 	states.Level:reset()
 	activeState = "Start"
 end
@@ -179,6 +196,58 @@ function level:doPause()
 	else
 		activeState = lastState
 	end
+end
+
+function level:getScore()
+	local aBonus = 350 * (player.hits / math.max(1, player.shots)) -- Shot accuracy bonus
+	
+	local timeAlotted = diffData[diff].tb * enemyTotalHealth
+	local tBonus = 250 * (timeAlotted / (endTime - startTime)) -- Time bonus
+	if tBonus > 250 then tBonus = 250 end
+	
+	local lBonus = 100 * (enemyTotalHealthStart / enemyTotalHealth) -- Damage done to enemies bonus
+	
+	local dBonus = 300 * (player.health / diffData[diff].h) -- Damage avoidance bonus
+	
+	local score = math.floor(aBonus + dBonus + lBonus + dBonus)
+	
+	return score
+end
+
+function level:getTimeTakenString()
+	local t = endTime - startTime
+	local timeAlotted = diffData[diff].tb * enemyTotalHealthStart
+	
+	local txt = string.format("%." .. 0 .. "f", t) .. "s / " .. string.format("%." .. 0 .. "f", timeAlotted) .. "s "
+	
+	if t < timeAlotted then 
+		txt = txt .." Bonus!"
+	end
+	
+	return txt
+end
+
+function level:getAccuracy()
+	local acc = (player.hits / math.max(1, player.shots)) * 100
+	
+	return string.format("%." .. 0 .. "f", acc)
+end
+
+function level:getDamageString()
+	local dBonus = 250 * (player.health / diffData[diff].h)
+	txt = string.format("%." .. 0 .. "f", dBonus) .. " / 250 "
+	
+	if dBonus > 200 then
+		txt = txt .. "Great!"
+	elseif dBonus > 150 then
+		txt = txt .. "Good"
+	elseif dBonus > 50 then
+		txt = txt .. "OK"
+	else
+		txt = txt .. "Dodge, Boss! Dodge!"
+	end
+	
+	return txt
 end
 
 --
@@ -231,6 +300,8 @@ function level:doShoot()
 			break
 		end	
 	end
+	
+	player.shots = player.shots + 1
 end
 
 --
@@ -273,7 +344,7 @@ function level:enemyGetRowSlot(e)
 end
 
 function level:doEnemyShot()
-	if enemiesAlive < 1 then
+	if level:getEnemiesAlive() < 1 then
 		return
 	end
 
@@ -314,21 +385,23 @@ end
 --
 
 function level:update(dt)
-	-- Check who is alive
-	enemiesAlive = level:getEnemiesAlive()
-
 	-- Check for win
 	if enemiesAlive < 1 then
+		endTime = love.timer.getTime()
+		
 		if currentLevel == #enemies then
-			activeState = "EndGame" 
+			activeState = "EndGame"
 		else 
 			activeState = "Win"
 		end
+		
+		return
 	end
 	
 	-- Check for loss
 	if player.health < 1 then
 		activeState = "Lose"
+		return
 	end
 	
 	-- Update bullets
@@ -365,7 +438,13 @@ function level:update(dt)
 							
 							if c < bulletSpec[bullets[i].owner].size + 16 then
 								enemies[currentLevel][j].health = math.max(0, enemies[currentLevel][j].health - 1) -- HIT!
+								
+								if enemies[currentLevel][j].health == 0 then
+									enemiesAlive = enemiesAlive - 1
+								end 
+								
 								bullets[i].owner = 0 -- Destroyed!
+								player.hits = player.hits + 1
 							end
 						end
 					end
@@ -539,10 +618,6 @@ function level:draw()
 	for i = 1, player.jumps, 1 do
 		love.graphics.rectangle("fill", mX - i*20 - 4, mY-16, 14, 14)
 	end
-	
-	love.graphics.setColor(1, 1, 1)
-	love.graphics.print("Level: ".. currentLevel.. "  ".. diffData[diff].n, 5, 2)
-	love.graphics.print("Score: ".. player.score, 5, 18)
 end
 
 return level

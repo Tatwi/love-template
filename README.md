@@ -6,7 +6,7 @@ I am puttering away at this as the starting point for an arcade style game that 
 
 I made this for LÖVE 11.5, as provided in [Debian 13 "Trixie"](https://www.debian.org/intro/why_debian).
   
-[![Screenshot-20260717-122010.png](https://i.postimg.cc/LsdjNhpz/Screenshot-20260717-122010.png)](https://postimg.cc/9Dp4fmzM)
+[![Screenshot-20260721-024847.png](https://i.postimg.cc/g0hYJFdS/Screenshot-20260721-024847.png)](https://postimg.cc/Ff9tW6Y3)
 
 ### Old Man Shakes Fist at Cloud:
 

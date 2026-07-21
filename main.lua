@@ -28,6 +28,9 @@ love.load = function()
 	
 	canvas = love.graphics.newCanvas(mX, mY)
 	
+	font = love.graphics.newFont(18)
+	love.graphics.setFont(font)
+	
 	states = {}
 	states.Start = require("start")
 	states.Paused = require("paused")
@@ -45,12 +48,19 @@ love.load = function()
 	
 	-- Difficulty
 	diff = 1
+	
+	-- fr: How quickly the enemies have a chance to fire
+	-- er: The likelihood an enemy will fire when given the chance
+	-- h: The player's health
+	-- j: How many jumps/warps the player can make
+	-- ed: Enemy damage, Square, Circles
+	-- n: The name of the difficulty setting
+	-- tb: Time(s) per enemy health point the player has to earn the full 250 time bonus points
 	diffData = {
-		-- Enemy fire rate, Player health & jumps, Name, Enemy Damage, Enemy random fire chance
-		{fr = 0.33, h = 200, j = 6, n = "Normal", ed = {5, 15}, er = {50, 30}},
-		{fr = 1.2, h = 200, j = 10, n = "Easy", ed = {2, 8}, er = {70, 50}},
-		{fr = 0.28, h = 150, j = 4, n = "Hard", ed = {5, 20}, er = {40, 20}},
-		{fr = 0.23, h = 100, j = 2, n = "Crazy", ed = {10,25}, er = {30, 15}},
+		{fr = 0.33, h = 200, j = 6, tb = 1.5, n = "Normal", ed = {8, 15}, er = {50, 30}},
+		{fr = 1.2, h = 200, j = 10, tb = 2, n = "Easy", ed = {2, 8}, er = {70, 50}},
+		{fr = 0.28, h = 150, j = 4, tb = 1.2, n = "Hard", ed = {8, 20}, er = {40, 20}},
+		{fr = 0.24, h = 100, j = 3, tb = 0.7, n = "Crazy", ed = {10,25}, er = {30, 15}},
 	}
 	
 	-- Manage save data, stored in CSV format

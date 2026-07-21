@@ -12,7 +12,7 @@ start.button_press = {
 	end,
 	start = function()
 		if activeState ~= "Level"  and activeState ~= "Paused" then
-			activeState = "Level"
+			currentLevel = 1
 			states.Level:load(currentLevel)
 		end
 	end,
@@ -29,7 +29,7 @@ start.key_press = {
 	end,
 	space = function()
 		if activeState ~= "Level" and activeState ~= "Paused" then
-			activeState = "Level"
+			currentLevel = 1
 			states.Level:load(currentLevel)
 		end
 	end,
@@ -51,7 +51,7 @@ function start:draw()
 	txt = txt .. "Press SPACE or (Start) to Play\n\n\n\n"
 	txt = txt .. "ESC or (Back) to Quit"
 	
-	love.graphics.printf(txt, 0, 20, love.graphics.getWidth()/2, "center", 0, 2, 2)
+	love.graphics.printf(txt, 0, 20, mX, "center", 0, 1, 1)
 end
 
 return start
