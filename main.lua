@@ -3,24 +3,6 @@
 -- Starting point for a game that uses game states
 -- GNU General Public License (GPLv3) - https://www.gnu.org/licenses/gpl-3.0.html
 
--- Convert a CSV string to a Lua table
-love.csvToTable = function(str)
-	local r = {}
-	local i = 1
-	local p = 1
-	while true do
-		local s = str:find(',', p, true)
-		if not s then
-			r[i] = str:sub(p)
-			break
-		end
-		r[i] = str:sub(p, s - 1)
-		p = s + 1
-		i = i + 1
-	end
-	return r
-end
-
 love.load = function()
 	-- Max window size
 	mX = 640
@@ -43,8 +25,14 @@ love.load = function()
 	
 	currentLevel = 1
 	
-	highestLevel = 1
-	highScore = 0
+	saveData = {}
+	savemgr = require("savemgr")
+	
+	if not savemgr:saveExists() then
+		saveData = savemgr:createSaveData()
+	else
+		saveData = savemgr:loadSaveData()
+	end
 	
 	-- Difficulty
 	diff = 1
@@ -62,31 +50,6 @@ love.load = function()
 		{fr = 0.28, h = 150, j = 4, tb = 1.2, n = "Hard", ed = {8, 20}, er = {40, 20}},
 		{fr = 0.24, h = 100, j = 3, tb = 0.7, n = "Crazy", ed = {10,25}, er = {30, 15}},
 	}
-	
-	-- Manage save data, stored in CSV format
-	local saveFile = "gamesave"
-	local saveFileContents = love.filesystem.read(saveFile, size)
-	
-	if saveFileContents then
-		print("Loading save data...")
-		local saveDataTable = love.csvToTable(saveFileContents)
-		
-		highestLevel = tonumber(saveDataTable[1])
-		highScore = tonumber(saveDataTable[2])
-		
-		print("highestLevel: ".. highestLevel.. "\nhighScore: ".. highScore)
-	else
-		print("Save data does not exist. Creating it...")
-		
-		local saveData = love.filesystem.newFileData(tostring(highestLevel)..","..tostring(highScore) , saveFile)		
-		local success, message = love.filesystem.write(saveFile, saveData)
-	
-		if success then 
-			print ('Save file created!')		
-		else 
-			print ('file not created: '..message)
-		end
-	end
 		
 	local joysticks = love.joystick.getJoysticks()
 	joystick = joysticks[1]

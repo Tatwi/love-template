@@ -1,6 +1,6 @@
 love.conf = function(t)
 	t.window.title      = "Game States Example"
-	t.identity = "gameStatesExample3"
+	t.identity = "gsExample"
 	t.version  = "11.5"
 	t.console  = false
 	t.window.width      = 640

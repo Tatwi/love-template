@@ -5,10 +5,17 @@
 
 local start = {}
 
+local waitingForSave = false
+local waitTimer = 0
+
 -- Gamepad single key press mapping
 start.button_press = {
 	back = function()
-		love.event.quit()
+		if not waitingForSave then
+			savemgr:writeSaveData()
+		end
+		
+		waitingForSave = true
 	end,
 	start = function()
 		if activeState ~= "Level"  and activeState ~= "Paused" then
@@ -25,7 +32,11 @@ start.button_press = {
 -- Keyboard single key press mapping
 start.key_press = {
 	escape = function()
-		love.event.quit()
+		if not waitingForSave then
+			savemgr:writeSaveData()
+		end
+		
+		waitingForSave = true
 	end,
 	space = function()
 		if activeState ~= "Level" and activeState ~= "Paused" then
@@ -40,16 +51,27 @@ start.key_press = {
 }
 
 function start:update(dt)
-
+	if waitingForSave then
+		waitTimer = waitTimer + dt
+		
+		if waitTimer > 2 then
+			love.event.quit()
+		end
+	end
 end
 
 function start:draw()
 	local txt = ""
-	txt = txt .. "Example Game!\n\n\n\n\n\n"
-	txt = txt .. "Difficulty: ".. diffData[diff].n .. "\n\n\n"
-	txt = txt .. "Press X or (X) to change Difficulty\n\n"
-	txt = txt .. "Press SPACE or (Start) to Play\n\n\n\n"
-	txt = txt .. "ESC or (Back) to Quit"
+	
+	if waitingForSave then
+		txt = "\n\n\n\n\n\n\n\nSaving..."
+	else
+		txt = txt .. "Example Game!\n\n\n\n\n\n"
+		txt = txt .. "Difficulty: ".. diffData[diff].n .. "\n\n\n"
+		txt = txt .. "Press X or (X) to change Difficulty\n\n"
+		txt = txt .. "Press SPACE or (Start) to Play\n\n\n\n"
+		txt = txt .. "ESC or (Back) to Quit"
+	end
 	
 	love.graphics.printf(txt, 0, 20, mX, "center", 0, 1, 1)
 end
