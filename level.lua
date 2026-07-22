@@ -36,7 +36,20 @@ end
 local enemies = {
 	require("levels/1"),
 	require("levels/2"),
-	require("levels/3")
+	require("levels/3"),
+	require("levels/4"),
+	require("levels/5"),
+	require("levels/6"),
+	require("levels/7"),
+	require("levels/8"),
+	require("levels/9"),
+	require("levels/10"),
+	require("levels/11"),
+	require("levels/12"),
+	require("levels/13"),
+	require("levels/14"),
+	require("levels/15"),
+	require("levels/16"),
 }
 
 local enemyDefaultHealth = {} -- Save here to reset at end of level
@@ -44,27 +57,27 @@ local enemyDefaultHealth = {} -- Save here to reset at end of level
 local enemyPositions = {
 	-- row 1
 	{
-		{{100,60},{200,60},{300,60},{400,60}}, 	-- rowGroup 1
-		{{130,60},{230,60},{330,60},{430,60}},		-- rowGroup 2
-		{{160,60},{260,60},{360,60},{460,60}},		-- rowGroup 3
-		{{190,60},{290,60},{390,60},{490,60}}, 	-- rowGroup 4
-		{{220,60},{320,60},{420,60},{520,60}},		-- rowGroup 5
+		{{100,60},{150,60},{200,60},{250,60},{300,60},{350,60},{400,60}}, 	-- rowGroup 1
+		{{130,60},{180,60},{230,60},{280,60},{330,60},{380,60},{430,60}},		-- rowGroup 2
+		{{160,60},{210,60},{260,60},{310,60},{360,60},{410,60},{460,60}},		-- rowGroup 3
+		{{190,60},{240,60},{290,60},{340,60},{390,60},{440,60},{490,60}}, 	-- rowGroup 4
+		{{220,60},{270,60},{320,60},{370,60},{420,60},{470,60},{520,60}},		-- rowGroup 5
 	},
 	-- row 2
 	{
-		{{100,120},{200,120},{300,120},{400,120}},
-		{{130,120},{230,120},{330,120},{430,120}},
-		{{160,120},{260,120},{360,120},{460,120}},
-		{{190,120},{290,120},{390,120},{490,120}},
-		{{220,120},{320,120},{420,120},{520,120}},
+		{{100,120},{150,120},{200,120},{250,120},{300,120},{350,120},{400,120}},
+		{{130,120},{180,120},{230,120},{280,120},{330,120},{380,120},{430,120}},
+		{{160,120},{210,120},{260,120},{310,120},{360,120},{410,120},{460,120}},
+		{{190,120},{240,120},{290,120},{340,120},{390,120},{440,120},{490,120}},
+		{{220,120},{270,120},{320,120},{370,120},{420,120},{470,120},{520,120}},
 	},
 	-- row 3
 	{
-		{{100,180},{200,180},{300,180},{400,180}},
-		{{130,180},{230,180},{330,180},{430,180}},
-		{{160,180},{260,180},{360,180},{460,180}},
-		{{190,180},{290,180},{390,180},{490,180}},
-		{{220,180},{320,180},{420,180},{520,180}},
+		{{100,180},{150,180},{200,180},{250,180},{300,180},{350,180},{400,180}},
+		{{130,180},{180,180},{230,180},{280,180},{330,180},{380,180},{430,180}},
+		{{160,180},{210,180},{260,180},{310,180},{360,180},{410,180},{460,180}},
+		{{190,180},{240,180},{290,180},{340,180},{390,180},{440,180},{490,180}},
+		{{220,180},{270,180},{320,180},{370,180},{420,180},{470,180},{520,180}},
 	},
 }
 local rowGroup = 1 -- Tracks which group of rows is being displayed
@@ -97,6 +110,10 @@ local bullets = {
 	{owner = 0, x = 0, y = 0},
 	{owner = 0, x = 0, y = 0},
 	{owner = 0, x = 0, y = 0},
+	{owner = 0, x = 0, y = 0},
+	{owner = 0, x = 0, y = 0},
+	{owner = 0, x = 0, y = 0},
+	{owner = 0, x = 0, y = 0}
 }
 
 local bulletSpec = {
@@ -333,11 +350,11 @@ local drawEnemyShapes = {
 
 function level:enemyGetRowSlot(e)
 	if enemies[currentLevel][e].row == 2 then
-		e = e - 4
+		e = e - 7
 	elseif enemies[currentLevel][e].row == 3 then
-		e = e - 8
+		e = e - 14
 	elseif enemies[currentLevel][e].row == 4 then
-		e = e - 12
+		e = e - 21
 	end
 	
 	return e
@@ -349,12 +366,19 @@ function level:doEnemyShot()
 	end
 
 	local rng = 0
+	local reasonableEffort = 0
 	
 	while true do
 		 rng = math.random(1, #enemies[currentLevel])
 		 
 		 if enemies[currentLevel][rng].health > 0 then
 			break
+		 end
+		 
+		 reasonableEffort = reasonableEffort + 1
+		 
+		 if reasonableEffort > 16 then
+			return
 		 end
 	end
 		
@@ -565,15 +589,13 @@ function level:draw()
 		if enemies[currentLevel][i].health > 0 then			
 			love.graphics.setColor(enemyColours[enemies[currentLevel][i].health])
 			
-			-- enemyPositions[ROW][ROW_GROUP][ROW_SLOT][1] = x, enemyPositions[ROW_GROUP][ROW_SLOT][2] = y
+			rowSlot = level:enemyGetRowSlot(i)
+			 
 			drawEnemyShapes[enemies[currentLevel][i].shape](
-				enemyPositions[enemies[currentLevel][i].row][rowGroup][rowSlot][1],
-				enemyPositions[enemies[currentLevel][i].row][rowGroup][rowSlot][2]
+				enemyPositions[enemies[currentLevel][i].row][rowGroup][rowSlot][1], -- x
+				enemyPositions[enemies[currentLevel][i].row][rowGroup][rowSlot][2] -- y
 			)
 		end
-		
-		rowSlot = rowSlot + 1
-		if rowSlot > 4 then rowSlot = 1 end
 	end
 		
 	-- Draw Player
