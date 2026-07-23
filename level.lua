@@ -16,10 +16,17 @@ local player = {}
 function level:resetPlayer()
 	player = {
 		x = mX/2, 
-		y = mY-32, 
-		size = 16, 
+		y = mY-32,
+		xv = 0,
+		yv = 0, 
+		size = 16,
+		steering = 437.5, -- left/right acceleration
+		handling = 250, -- top speed left/right
+		responsiveness = 743.75, -- forward (up) acceleration
+		acceleration = 150, -- forward (up) top speed
+		deceleration = 160, -- backward (down) top speed
+		brakes = 918.75, -- backward (down) acceleration
 		jumps = diffData[diff].j, 
-		speed = 200, 
 		health =  diffData[diff].h,
 		shotTimer = 0,
 		jumpTimer = 0,
@@ -117,9 +124,9 @@ local bullets = {
 }
 
 local bulletSpec = {
-	{speed = 300, size = 3, wobble = -1, dir = 1, c = {0,1,0.5}}, -- enemy 1
-	{speed = 150, size = 14, wobble = -2, dir = 1, c = {0,1,1}}, -- enemy 2
-	{speed = 700, size = 2, wobble = 1, dir = -1, c = {1,0.72,0}}, -- player
+	{speed = 300, acc = 1.5, size = 3, wobble = -1, dir = 1, c = {0,1,0.5}}, -- enemy 1
+	{speed = 150, acc = 1, size = 14, wobble = -2, dir = 1, c = {0,1,1}}, -- enemy 2
+	{speed = 700, acc = -0.8, size = 2, wobble = 1, dir = -1, c = {1,0.72,0}}, -- player
 }
 
 -- Gamepad single key press mapping
@@ -151,6 +158,22 @@ level.key_press = {
 	end,
 	lshift = function()
 		level:doShoot()
+	end
+}
+
+-- Gamepad and Keyboard movement
+level.movement = {
+	left = function(dt)
+		player.xv = math.max(player.handling * -1, player.xv - player.steering * dt)
+	end,
+	right = function(dt)
+		player.xv = math.min(player.handling, player.xv + player.steering * dt)
+	end,
+	up = function(dt)
+		player.yv = math.max(player.acceleration * -1, player.yv - player.responsiveness * dt)
+	end,
+	down = function(dt)
+		player.yv = math.min(player.deceleration, player.yv + player.brakes * dt)
 	end
 }
 
@@ -347,7 +370,6 @@ local drawEnemyShapes = {
 	end
 }
 
-
 function level:enemyGetRowSlot(e)
 	if enemies[currentLevel][e].row == 2 then
 		e = e - 7
@@ -431,12 +453,23 @@ function level:update(dt)
 	-- Update bullets
 	local enemyX = 0
 	local rowSlot = 1
-	local a, b, c = 0
+	local a, b, c = 0 
+	local accel = 0
 	
 	for i = 1, #bullets, 1 do
 		if bullets[i].owner > 0 then
 			-- Update position
-			bullets[i].y = bullets[i].y + bulletSpec[bullets[i].owner].speed * bulletSpec[bullets[i].owner].dir * dt
+			accel = diffData[diff].baf / (mY - bullets[i].y / 2) * bulletSpec[bullets[i].owner].acc
+			bullets[i].y = bullets[i].y + bulletSpec[bullets[i].owner].speed * bulletSpec[bullets[i].owner].dir * dt + accel
+			
+			-- Round bullet pathing
+			if bullets[i].owner == 2 then
+				if math.mod(i, 2) == 0 then
+					bullets[i].x = bullets[i].x + math.sin(bullets[i].y*dt)*1.18 -- evens shoot right
+				else
+					bullets[i].x = bullets[i].x + math.sin(bullets[i].y*dt)*1.18 * -1 -- odds shoot left
+				end
+			end
 			
 			-- Kill if off the screen
 			if bullets[i].y > mY then
@@ -513,6 +546,9 @@ function level:update(dt)
 			player.jumpTimer = 0
 		end
 		
+		player.xv = 0
+		player.yv = 0
+		
 		return
 	end
 	
@@ -528,37 +564,46 @@ function level:update(dt)
 	local doingKeys = false
 	
 	-- Keyboard continuous input
-	if love.keyboard.isDown("right", "d") then
-		player.x = player.x + player.speed * dt
-		doingKeys = true
-	elseif love.keyboard.isDown("left", "a") then
-		player.x = player.x - player.speed * dt
+	if love.keyboard.isDown("left", "a") then
+		level.movement.left(dt)
 		doingKeys = true
 	end
-	
+	if love.keyboard.isDown("right", "d") then
+		level.movement.right(dt)
+		doingKeys = true
+	end
+	if love.keyboard.isDown("up", "w") then
+		level.movement.up(dt)
+		doingKeys = true
+	end
 	if love.keyboard.isDown("down", "s") then
-		player.y = player.y + player.speed * dt
+		level.movement.down(dt)
 		doingKeys = true
-	elseif love.keyboard.isDown("up", "w") then
-		player.y = player.y - player.speed * dt
-		doingKeys = true
-	end	
+	end
+		
 
 	-- Don't do gamepad if doing joystick and prevent crash from happening when acting upon a nil object
 	if joystick and not doingKeys then 	
 		-- Gamepad continuous input
 		if joystick:isGamepadDown("dpleft") then
-			player.x = player.x - player.speed * dt
-		elseif joystick:isGamepadDown("dpright") then
-			player.x = player.x + player.speed * dt
+			level.movement.left(dt)
+		end
+		if joystick:isGamepadDown("dpright") then
+			level.movement.right(dt)
 		end
 
 		if joystick:isGamepadDown("dpup") then
-			player.y = player.y - player.speed * dt
-		elseif joystick:isGamepadDown("dpdown") then
-			player.y = player.y + player.speed * dt
+			level.movement.up(dt)
+		end
+		if joystick:isGamepadDown("dpdown") then
+			level.movement.down(dt)
 		end
 	end
+	
+	player.x = player.x + player.xv*dt
+	player.xv = player.xv * 0.99
+	player.y = player.y + player.yv*dt
+	player.yv = player.yv * 0.99
 	
 	-- Clamp player position to desired part of the screen
 	if player.x > mX - player.size then
@@ -573,6 +618,7 @@ function level:update(dt)
 		player.y = mY - player.size * 6 
 	end
 end
+
 
 function level:draw()
 	-- Draw bullets
