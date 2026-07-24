@@ -166,6 +166,7 @@ function savemgr:setHS(diff, level, score)
 	saveData[saveSlot] = score
 end
 
+
 function savemgr:compare(diff, level, score)
 	local saveSlot = level
 	
@@ -183,6 +184,5 @@ function savemgr:compare(diff, level, score)
 
 	return false
 end
-
 
 return savemgr

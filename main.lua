@@ -46,10 +46,10 @@ love.load = function()
 	-- tb: Time(s) per enemy health point the player has to earn the full 250 time bonus points
 	-- baf: Bullet acceleration factor. Larger numbers increase the pace of the game.
 	diffData = {
-		{fr = 0.33, h = 200, j = 6, tb = 1.5, n = "Normal", baf = 400, ed = {8, 15}, er = {50, 30}},
-		{fr = 1.2, h = 200, j = 10, tb = 2, n = "Easy", baf = 100, ed = {2, 8}, er = {70, 50}},
-		{fr = 0.28, h = 150, j = 4, tb = 1.2, n = "Hard", baf = 700, ed = {8, 20}, er = {40, 20}},
-		{fr = 0.24, h = 100, j = 3, tb = 0.7, n = "Crazy", baf = 1000, ed = {10,25}, er = {30, 15}},
+		{fr = 0.33, h = 200, j = 6, tb = 3, n = "Normal", baf = 400, ed = {8, 15}, er = {50, 30}},
+		{fr = 1.2, h = 200, j = 10, tb = 5, n = "Easy", baf = 100, ed = {2, 8}, er = {70, 50}},
+		{fr = 0.28, h = 150, j = 4, tb = 2, n = "Hard", baf = 700, ed = {8, 20}, er = {40, 20}},
+		{fr = 0.24, h = 100, j = 3, tb = 1, n = "Crazy", baf = 1000, ed = {10,25}, er = {30, 15}},
 	}
 		
 	local joysticks = love.joystick.getJoysticks()
@@ -60,6 +60,7 @@ end
 love.update = function(dt)
 	states[activeState]:update(dt)
 end
+
 
 love.draw = function()
 	love.graphics.setCanvas(canvas)
@@ -73,11 +74,13 @@ love.draw = function()
 	love.graphics.draw(canvas, 0, 0)
 end
 
+
 love.gamepadpressed = function(joystick, button)
 	if states[activeState].button_press[button] then
 		states[activeState].button_press[button]()
 	end
 end
+
 
 love.keypressed = function(key)
 	if states[activeState].key_press[key] then

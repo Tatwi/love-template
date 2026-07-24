@@ -129,6 +129,16 @@ local bulletSpec = {
 	{speed = 700, acc = -0.8, size = 2, wobble = 1, dir = -1, c = {1,0.72,0}}, -- player
 }
 
+local gameProgress = {}
+function level:resetGameProgress()
+	gameProgress = {
+		timePassed = 0, 
+		score = 0, 
+		accuracy = 0, 
+		damageTaken = 0
+	}
+end
+
 -- Gamepad single key press mapping
 level.button_press = {
 	back = function()
@@ -203,6 +213,7 @@ function level:load(lvl)
 	activeState = "Level"
 end
 
+
 function level:reset()
 	for i = 1, #enemies[currentLevel], 1 do
 		enemies[currentLevel][i].health = enemyDefaultHealth[i]
@@ -224,10 +235,13 @@ function level:reset()
 	enemiesAlive = 0
 end
 
+
 function level:doQuit()
 	states.Level:reset()
+	level:resetGameProgress()
 	activeState = "Start"
 end
+
 
 function level:doPause()
 	if activeState ~= "Paused" then
@@ -238,10 +252,11 @@ function level:doPause()
 	end
 end
 
+
 function level:getScore()
 	local aBonus = 350 * (player.hits / math.max(1, player.shots)) -- Shot accuracy bonus
 	
-	local timeAlotted = diffData[diff].tb * enemyTotalHealth
+	local timeAlotted = diffData[diff].tb * enemyTotalHealthStart
 	local tBonus = 250 * (timeAlotted / (endTime - startTime)) -- Time bonus
 	if tBonus > 250 then tBonus = 250 end
 	
@@ -254,7 +269,8 @@ function level:getScore()
 	return score
 end
 
-function level:getTimeTakenString()
+
+function level:getTimeToWinString()
 	local t = endTime - startTime
 	local timeAlotted = diffData[diff].tb * enemyTotalHealthStart
 	
@@ -267,11 +283,29 @@ function level:getTimeTakenString()
 	return txt
 end
 
+
+function level:getTimePassed()
+	local t = love.timer.getTime() - startTime
+	
+	return tonumber(string.format("%." .. 0 .. "f", t)) -- truncate decimal places
+end
+
+
+function level:getEndGame()
+	if currentLevel == #enemies then
+		return true
+	end
+	
+	return false
+end
+
+
 function level:getAccuracy()
 	local acc = (player.hits / math.max(1, player.shots)) * 100
 	
-	return string.format("%." .. 0 .. "f", acc)
+	return tonumber(string.format("%." .. 0 .. "f", acc)) -- truncate decimal places
 end
+
 
 function level:getDamageString()
 	local dBonus = 250 * (player.health / diffData[diff].h)
@@ -286,6 +320,57 @@ function level:getDamageString()
 	else
 		txt = txt .. "Dodge, Boss! Dodge!"
 	end
+	
+	return txt
+end
+
+
+function level:getDamageTaken()
+	return (diffData[diff].h - player.health)
+end
+
+
+function level:updateGameProgress(t, s, a, d)
+		gameProgress.timePassed = gameProgress.timePassed  + t
+		gameProgress.score = gameProgress.score + s
+		gameProgress.damageTaken = gameProgress.damageTaken + d
+		
+		if currentLevel == 1 then
+			gameProgress.accuracy = a
+			
+			return
+		end
+		
+		gameProgress.accuracy = (gameProgress.accuracy + a) / 2
+end
+
+
+function level:getGameSummary()
+	local sp = gameProgress.score / (#enemies * 1000) * 100
+	
+	local txt = "Time Played: " .. gameProgress.timePassed .. " Seconds\n\n"
+	txt = txt .. "Score: " .. gameProgress.score .. " / " .. (#enemies * 1000) .."\n\n"
+	txt = txt .. "Accuracy: " .. gameProgress.accuracy .. "%\n\n"
+	txt = txt .. "Damage Taken: " .. gameProgress.damageTaken .. " / " .. (diffData[diff].h * #enemies) .. "\n"
+	txt = txt .. "_________________________________\n\n"
+	
+	local grats = "Hey, at least you beat the game!"
+	
+	if sp > 95 then
+		grats = "Incredible!"
+	elseif sp > 90 then
+		grats = "Amazing!"
+	elseif sp > 80 then
+		grats = "Awesome!"
+	elseif sp > 70 then
+		grats = "Nice!"
+	elseif sp > 60 then
+		grats = "Not Too Shabby"
+	elseif sp > 50 then
+		grats = "You've got some room to improve"
+	end
+	
+	txt = txt .. grats .. "\n\n"
 	
 	return txt
 end
@@ -319,6 +404,7 @@ function level:doJump()
 	player.y = math.random(mY - player.size * 6, mY - player.size - 24)
 	end
 end
+
 
 function level:doShoot()
 	if player.jumping then
@@ -360,6 +446,7 @@ function level:getEnemiesAlive()
 	return e
 end
 
+
 -- Indexed to deal with differences between square and circles
 local drawEnemyShapes = {
 	function(x, y)
@@ -369,6 +456,7 @@ local drawEnemyShapes = {
 		love.graphics.circle("fill", x, y, 16) -- enemy 2
 	end
 }
+
 
 function level:enemyGetRowSlot(e)
 	if enemies[currentLevel][e].row == 2 then
@@ -381,6 +469,7 @@ function level:enemyGetRowSlot(e)
 	
 	return e
 end
+
 
 function level:doEnemyShot()
 	if level:getEnemiesAlive() < 1 then
@@ -434,12 +523,7 @@ function level:update(dt)
 	-- Check for win
 	if enemiesAlive < 1 then
 		endTime = love.timer.getTime()
-		
-		if currentLevel == #enemies then
-			activeState = "EndGame"
-		else 
-			activeState = "Win"
-		end
+		activeState = "Win"
 		
 		return
 	end

@@ -5,9 +5,19 @@
 
 local lose = {}
 
+local onload = true
+local score = 0
+local scoreTxt = ""
+local timeTaken = ""
+local accuracy = 0
+local isNewHighScore = false
+local txt = ""
+
 -- Gamepad single key press mapping
 lose.button_press = {
 	back = function()
+		lose:reset()
+		states.Level:resetGameProgress()
 		states.Level:doQuit()
 	end
 }
@@ -15,21 +25,54 @@ lose.button_press = {
 -- Keyboard single key press mapping
 lose.key_press = {
 	escape = function()
+		lose:reset()
+		states.Level:resetGameProgress()
 		states.Level:doQuit()
 	end
 }
 
-function lose:update(dt)
-
+function lose:reset()
+	onload = true
+	score = 0
+	timeTaken = ""
+	accuracy = 0
+	isNewHighScore = false
+	txt = ""
 end
 
-function lose:draw()
-	local txt = ""
-	txt = txt .. "Level Failed\n\n\nGame Over\n\n\n"
-	txt = txt .. "Score:\n" .. states.Level:getScore() .. " / 1000\n\n"
-	txt = txt .. "Accuracy:\n " .. states.Level:getAccuracy() .. "%\n\n\n\n"
-	txt = txt .. "ESC or (Back) to Quit"
+function lose:onLoad()
+	if not onload then
+		return
+	end
 	
+	score = states.Level:getScore()
+	isNewHighScore = savemgr:compare(diff, currentLevel, score)
+	timeTaken = states.Level:getTimePassed()
+	accuracy = states.Level:getAccuracy()
+	
+	if isNewHighScore then
+		savemgr:setHS(diff, currentLevel, score)
+		scoreTxt = txt .. "New High Score!\n" .. score .. " / 1000\n\n"
+	else
+		scoreTxt = txt .. "Score:\n" .. score .. " / 1000\n\n"
+	end
+	
+	txt = "Level " .. currentLevel .. " Failed\n\n\nGame Over\n\n\n"
+	txt = txt .. scoreTxt
+	txt = txt .. "Accuracy:\n " .. accuracy .. "%\n\n"
+	txt = txt .. "Time:\n" .. timeTaken .. "\n\n\n"
+	txt = txt .. "ESC or (Back) to Exit"
+	
+	onload = false
+end
+
+
+function lose:update(dt)
+	lose:onLoad()
+end
+
+
+function lose:draw()
 	love.graphics.printf(txt, 0, 20, mX, "center", 0, 1, 1)
 end
 

@@ -5,8 +5,14 @@
 
 local start = {}
 
+local onload = true
 local waitingForSave = false
 local waitTimer = 0
+local txt = ""
+local txtMenuT = ""
+local txtMenuD = ""
+local txtMenuB = ""
+local txtSave = ""
 
 -- Gamepad single key press mapping
 start.button_press = {
@@ -26,7 +32,7 @@ start.button_press = {
 	x = function()
 		diff = diff + 1
 		if diff > 4 then diff = 1 end
-	end
+	end,
 }
 
 -- Keyboard single key press mapping
@@ -50,29 +56,43 @@ start.key_press = {
 	end
 }
 
+function start:onLoad()
+	if not onload then
+		return
+	end
+	
+	states.Level:resetGameProgress()
+
+	txtSave = "\n\n\n\n\n\n\n\nSaving..."
+	txtMenuT = "Example Game!\n_________________________________\n\n\n\n"
+	txtMenuB = "Press X or (X) to change Difficulty\n\n"
+	txtMenuB = txtMenuB .. "Press H or (Y) for High Scores\n\n\n\n"
+	txtMenuB = txtMenuB .. "Press SPACE or (Start) to Play\n\n\n\n\n"
+	txtMenuB = txtMenuB .. "ESC or (Back) to Quit"	
+end
+
+
 function start:update(dt)
+	start:onLoad()
+
 	if waitingForSave then
 		waitTimer = waitTimer + dt
 		
 		if waitTimer > 2 then
 			love.event.quit()
 		end
+		
+		txt = txtSave
+		
+		return
 	end
+	
+	txtMenuD = "Difficulty: ".. diffData[diff].n .. "\n\n\n"
+	txt = txtMenuT .. txtMenuD .. txtMenuB
 end
 
+
 function start:draw()
-	local txt = ""
-	
-	if waitingForSave then
-		txt = "\n\n\n\n\n\n\n\nSaving..."
-	else
-		txt = txt .. "Example Game!\n\n\n\n\n\n"
-		txt = txt .. "Difficulty: ".. diffData[diff].n .. "\n\n\n"
-		txt = txt .. "Press X or (X) to change Difficulty\n\n"
-		txt = txt .. "Press SPACE or (Start) to Play\n\n\n\n"
-		txt = txt .. "ESC or (Back) to Quit"
-	end
-	
 	love.graphics.printf(txt, 0, 20, mX, "center", 0, 1, 1)
 end
 
